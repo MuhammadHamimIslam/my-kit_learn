@@ -1,17 +1,4 @@
 import numpy as np
-from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split
-
-X, y = make_classification(
-    n_samples=200,
-    n_features=2,
-    n_informative=1,
-    n_redundant=1,
-    n_clusters_per_class=1,   # fix
-    random_state=42
-)
-x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
 
 class Node:
     def __init__(self, feature=None, threshold=None, left=None, right=None,*, value=None):
@@ -120,7 +107,37 @@ class DecisionTreeClassifier:
         y_pred = self.predict(X)
         return np.mean(y == y_pred)
 
-tree = DecisionTreeClassifier(max_depth=5, min_samples_split=3, criterion="entropy")
-
-tree.fit(x_train, y_train)
-print(tree.score(x_test, y_test))
+class RandomForestClassifier:
+    def __init__(self, n_estimators=100, max_depth=None, min_samples_split=None, criterion="gini"):
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.criterion = criterion
+        self.trees = []
+    
+    def fit(self, X, y):
+        n_samples = X.shape[0]
+        for n in range(self.n_estimators):
+            rand_idx = np.random.choice(n_samples, size=n_samples, replace=True)
+            boots_x = X[rand_idx]
+            boots_y = y[rand_idx]
+            
+            tree = DecisionTreeClassifier(self.max_depth, self.min_samples_split, criterion=self.criterion)
+            tree.fit(boots_x, boots_y)
+            
+            self.trees.append(tree)
+    
+    def predict(self, X):
+        if len(self.trees) <= 1:
+            raise ValueError("Not fitted yet!")
+        trees_pred = np.array([tree.predict(X) for tree in self.trees]).T
+        
+        predictions = []
+        for votes in trees_pred:
+            pred = np.bincount(votes).argmax()
+            predictions.append(pred)
+        return np.array(predictions)
+        
+    def score(self, X, y):
+        y_pred = self.predict(X)
+        return (y_pred == y).mean()
