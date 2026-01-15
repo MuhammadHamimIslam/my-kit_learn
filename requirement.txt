@@ -1,0 +1,5 @@
+# Core (always needed)
+numpy>=1.20.0
+
+# Optional
+matplotlib>=3.5.0          # for plotting loss curves, decision boundaries
