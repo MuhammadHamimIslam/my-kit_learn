@@ -108,3 +108,31 @@ class LabelEncoder:
         if self.classes is None:
             raise ValueError("Not Fitted yet")
         return self.classes[num]
+
+class SimpleImputer:
+    def __init__(self, strategy="mean"):
+        self.strategy = strategy
+        self.st = None
+    
+    def fit(self, X):
+        if self.strategy == "mean":
+            self.st = np.nanmean(X, axis=0)
+        elif self.strategy == "median":
+            self.st = np.nanmedian(X, axis=0)
+        elif self.strategy == "most_frequent":
+            X_cp = np.array([x for x in X if not self._is_missing(x)])
+            values, counts = np.unique(X_cp, return_counts=True)
+            self.st = values[np.argmax(counts)]
+
+    def _is_missing(self, x):
+        return (isinstance(x, float) and x != x) or (isinstance(x, str) and x.lower() == "nan")
+
+    def transform(self, X):
+        if self.st is None:
+            raise ValueError("Not Fitted!")
+        X = np.array([self.st if self._is_missing(x) else x for x in X])
+        return X
+    
+    def fit_transform(self, X):
+        self.fit(X) # fit on X
+        return self.transform(X)
